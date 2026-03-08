@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STUXNET // GLEAPHE SYSTEMS // DASHBOARD 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030508;
+            --fg: #e0fff8;
+            --muted: #3a5a6a;
+            --accent: #00ffd5;
+            --accent-alt: #ff0066;
+            --card: rgba(5, 20, 35, 0.85);
+            --border: #00ffd5;
+            --danger: #ff0040;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--fg);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .font-display { font-family: 'Orbitron', sans-serif; }
+
+        /* Canvas background */
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Grid overlay */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(0, 255, 213, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 213, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Main container */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: 0 0 20px rgba(0, 255, 213, 0.15);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            box-shadow: 0 0 30px rgba(0, 255, 213, 0.3);
+            border-color: var(--accent-alt);
+        }
+
+        .card-header {
+            border-bottom: 1px solid rgba(0, 255, 213, 0.3);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.9rem;
+        }
+
+        .card-header .icon {
+            width: 20px;
+            height: 20px;
+            color: var(--accent-alt);
+        }
+
+        /* Glitch Title */
+        .glitch-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .glitch-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            position: relative;
+            text-shadow: 0 0 20px var(--accent);
+        }
+
+        .glitch-title::before,
+        .glitch-title::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glitch-title::before {
+            left: 2px;
+            text-shadow: -2px 0 var(--accent-alt);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+
+        .glitch-title::after {
+            left: -2px;
+            text-shadow: -2px 0 var(--accent);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(18px, 9999px, 52px, 0); }
+            20% { clip: rect(79px, 9999px, 84px, 0); }
+            40% { clip: rect(2px, 9999px, 51px, 0); }
+            60% { clip: rect(98px, 9999px, 124px, 0); }
+            80% { clip: rect(45px, 9999px, 88px, 0); }
+            100% { clip: rect(23px, 9999px, 69px, 0); }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            20% { clip: rect(12px, 9999px, 45px, 0); }
+            40% { clip: rect(89px, 9999px, 130px, 0); }
+            60% { clip: rect(5px, 9999px, 40px, 0); }
+            80% { clip: rect(72px, 9999px, 110px, 0); }
+            100% { clip: rect(28px, 9999px, 90px, 0); }
+        }
+
+        /* Stats */
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 2.5rem;
+            color: var(--accent);
+            text-shadow: 0 0 15px rgba(0, 255, 213, 0.5);
+            transition: color 0.3s;
+        }
+
+        .stat-value.danger {
+            color: var(--danger);
+            text-shadow: 0 0 15px rgba(255, 0, 64, 0.7);
+        }
+
+        /* Simulation Zone */
+        .sim-container {
+            background: #010408;
+            border: 2px solid #0ff;
+            position: relative;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .sim-screen {
+            border: 1px solid #333;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .screen-label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: rgba(0, 255, 213, 0.1);
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            color: #0ff;
+            border-bottom: 1px solid #0ff;
+            border-right: 1px solid #0ff;
+            z-index: 10;
+        }
+
+        /* Monitor specific */
+        .monitor-readout {
+            font-size: 1.5rem;
+            padding: 20px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .waveform {
+            height: 100px;
+            width: 100%;
+        }
+
+        /* Buttons */
+        .btn {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 10px 20px;
+            font-family: 'Share Tech Mono', monospace;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 213, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 213, 0.1);
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        .btn-launch {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .btn-launch:hover {
+            background: rgba(255, 0, 64, 0.1);
+            box-shadow: 0 0 15px var(--danger);
+        }
+
+        .btn-launch.active {
+            background: var(--danger);
+            color: #000;
+            animation: pulse-danger 1s infinite;
+        }
+
+        @keyframes pulse-danger {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 64, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 0, 64, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 64, 0); }
+        }
+
+        /* Footer Signature */
+        .signature {
+            text-align: center;
+            margin-top: 60px;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(0, 255, 213, 0.2);
+            position: relative;
+        }
+
+        .signature-box {
+            display: inline-block;
+            padding: 15px 30px;
+            border: 1px solid var(--accent);
+            position: relative;
+        }
+
+        .signature-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            letter-spacing: 4px;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(0, 255, 213, 0.5);
+        }
+
+        .signature-year {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: var(--bg);
+            border: 1px solid var(--accent-alt);
+            color: var(--accent-alt);
+            padding: 2px 8px;
+            font-size: 0.8rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .glitch-title { font-size: 2rem; }
+            .sim-container { grid-template-columns: 1fr; }
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bgCanvas"></canvas>
+    <div class="grid-overlay"></div>
+
+    <div class="main-container">
+        <!-- HEADER -->
+        <header class="mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-cyan-900/50 pb-6">
+                <div>
+                    <div class="glitch-wrapper">
+                        <h1 class="font-display glitch-title text-white" data-text="STUXNET">STUXNET</h1>
+                    </div>
+                    <div class="text-cyan-400 tracking-widest text-sm mt-2 opacity-80">
+                        CYBERWEAPON SIMULATION INTERFACE // GLEAPHE SYSTEMS
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-gray-500">SYSTEM STATUS</div>
+                    <div class="text-xl font-display text-cyan-400" id="systemStatus">READY</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- SIMULATOR SECTION -->
+        <section class="mb-8">
+            <div class="card p-6">
+                <div class="card-header">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                    </svg>
+                    <span>Payload PLC Simulator (Siemens S7-417)</span>
+                </div>
+                
+                <div class="sim-container">
+                    <!-- Reality vs Operator View -->
+                    <div class="sim-screen" style="min-height: 300px;">
+                        <div class="screen-label">REALITY (PHYSICAL PROCESS)</div>
+                        <canvas id="realityCanvas"></canvas>
+                    </div>
+                    <div class="sim-screen" style="min-height: 300px;">
+                        <div class="screen-label">OPERATOR VIEW (SCADA MONITOR)</div>
+                        <canvas id="scadaCanvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <div class="p-4 bg-cyan-900/10 border border-cyan-800/30">
+                        <div class="text-xs text-gray-500 mb-1">FREQUENCY REALITY</div>
+                        <div class="stat-value" id="freqReal">1410 Hz</div>
+                    </div>
+                    <div class="p-4 bg-cyan-900/10 border border-cyan-800/30">
+                        <div class="text-xs text-gray-500 mb-1">PRESSURE REALITY</div>
+                        <div class="stat-value" id="pressureReal">Normal</div>
+                    </div>
+                    <div class="p-4 bg-cyan-900/10 border border-cyan-800/30">
+                        <div class="text-xs text-gray-500 mb-1">CENTRIFUGE INTEGRITY</div>
+                        <div class="stat-value" id="integrity">100%</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-4 mt-6">
+                    <button class="btn" id="btnNormal" onclick="setState('NORMAL')">
+                        Mode Normal
+                    </button>
+                    <button class="btn" id="btnInject" onclick="setState('INJECT')">
+                        Injecter Payload
+                    </button>
+                    <button class="btn btn-launch" id="btnAttack" onclick="setState('ATTACK')">
+                        Lancer Attaque
+                    </button>
+                    <button class="btn" onclick="setState('RESET')">
+                        Reinitialiser
+                    </button>
+                </div>
+
+                <div class="mt-6 font-mono text-xs bg-black/50 p-4" id="terminal">
+                    > SYSTEM READY WAITING FOR INPUT...
+                </div>
+            </div>
+        </section>
+
+        <!-- STATS GRID -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="card p-4 text-center">
+                <div class="text-xs text-gray-500 mb-2">TARGETS INFECTED</div>
+                <div class="stat-value text-xl" id="counterInfected">0</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-xs text-gray-500 mb-2">DAMAGE ESTIMATE ($)</div>
+                <div class="stat-value text-xl text-pink-400" id="counterDamage">0</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-xs text-gray-500 mb-2">ZERO-DAYS USED</div>
+                <div class="stat-value text-xl">7</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-xs text-gray-500 mb-2">LINES OF CODE</div>
+                <div class="stat-value text-xl">~500K</div>
+            </div>
+        </div>
+
+        <!-- SIGNATURE -->
+        <div class="signature">
+            <div class="signature-box">
+                <span class="signature-text">GLEAPHE</span>
+                <span class="signature-year">2026</span>
+            </div>
+            <div class="text-gray-600 text-xs mt-4 tracking-widest">
+                CYBERSECURITY RESEARCH DIVISION // EDUCATIONAL PURPOSE ONLY
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== BACKGROUND ANIMATION =====
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vy = Math.random() * 0.5 + 0.1; // Falling data
+                this.size = Math.random() * 2;
+                this.char = String.fromCharCode(0x30A0 + Math.random() * 96); // Katakana
+                this.color = `rgba(0, 255, 213, ${Math.random() * 0.5})`;
+            }
+            update() {
+                this.y += this.vy;
+                if (this.y > canvas.height) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.font = `${this.size * 10}px Share Tech Mono`;
+                ctx.fillText(this.char, this.x, this.y);
+            }
+        }
+
+        for(let i=0; i<50; i++) particles.push(new Particle());
+
+        function animateBg() {
+            ctx.fillStyle = 'rgba(3, 5, 8, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+
+        // ===== SIMULATION ENGINE =====
+        const realityCanvas = document.getElementById('realityCanvas');
+        const scadaCanvas = document.getElementById('scadaCanvas');
+        const rCtx = realityCanvas.getContext('2d');
+        const sCtx = scadaCanvas.getContext('2d');
+        const terminal = document.getElementById('terminal');
+
+        // State
+        let state = {
+            mode: 'NORMAL', // NORMAL, INJECT, ATTACK
+            time: 0,
+            freqReal: 1410,
+            freqScada: 1410,
+            pressure: 0, // 0 to 100 scale
+            integrity: 100,
+            recording: [],
+            attackPhase: 0,
+            wobble: 0
+        };
+
+        // Resize simulation canvases
+        function resizeSim() {
+            const container = realityCanvas.parentElement;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            
+            realityCanvas.width = w;
+            realityCanvas.height = h;
+            scadaCanvas.width = w;
+            scadaCanvas.height = h;
+        }
+        resizeSim();
+        window.addEventListener('resize', resizeSim);
+
+        function log(msg) {
+            const d = new Date();
+            const time = d.toLocaleTimeString();
+            terminal.innerHTML += `<div><span style="color:#666">[${time}]</span> ${msg}</div>`;
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function setState(mode) {
+            state.mode = mode;
+            
+            // Reset buttons
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            
+            if(mode === 'NORMAL') {
+                log('<span style="color:#0ff">Mode normal engagé.</span> Fréquence 1410Hz stable.');
+                state.freqReal = 1410;
+                state.freqScada = 1410;
+                state.pressure = 0;
+            }
+            
+            if(mode === 'INJECT') {
+                log('<span style="color:#f0f">Injection du payload...</span> Recherche de signature Siemens S7...');
+                setTimeout(() => {
+                    log('<span style="color:#0f0">SUCCÈS.</span> Code injecté dans le bloc OB1.');
+                    log('Démarrage de l\'enregistrement de l\'état "Normal" (21 secondes)...');
+                    state.recording = [];
+                }, 1000);
+            }
+            
+            if(mode === 'ATTACK') {
+                document.getElementById('btnAttack').classList.add('active');
+                log('<span style="color:#f00">ATTAQUE LANCÉE.</span>');
+                log('1. Altération de la fréquence des convertisseurs de fréquence.');
+                log('2. Rejeu de l\'enregistrement "Normal" vers les écrans de contrôle.');
+                state.attackPhase = 0;
+            }
+            
+            if(mode === 'RESET') {
+                log('<span style="color:#0ff">RÉINITIALISATION SYSTÈME.</span>');
+                state = {
+                    mode: 'NORMAL',
+                    time: 0,
+                    freqReal: 1410,
+                    freqScada: 1410,
+                    pressure: 0,
+                    integrity: 100,
+                    recording: [],
+                    attackPhase: 0,
+                    wobble: 0
+                };
+            }
+        }
+
+        // Animation Loop
+        function drawScene(ctx, freq, pressure, isScada) {
+            const w = ctx.canvas.width;
+            const h = ctx.canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            // Clear
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, w, h);
+            
+            // Draw Centrifuge
+            const radius = Math.min(w, h) * 0.35;
+            const rotSpeed = freq / 500; // Visual rotation speed
+            
+            state.wobble += 0.1;
+            let wobbleX = 0, wobbleY = 0;
+            
+            // Add wobble if pressure is high
+            if (pressure > 50) {
+                wobbleX = Math.sin(state.wobble * 2) * (pressure/10);
+                wobbleY = Math.cos(state.wobble * 3) * (pressure/10);
+            }
+
+            ctx.save();
+            ctx.translate(cx + wobbleX, cy + wobbleY);
+            
+            // Outer Ring
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = isScada ? '#00ff00' : (pressure > 50 ? '#ff0040' : '#0ff');
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Rotors
+            ctx.rotate(state.time * rotSpeed);
+            const rotorCount = 8;
+            for(let i=0; i<rotorCount; i++) {
+                ctx.rotate(Math.PI * 2 / rotorCount);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(radius * 0.9, 0);
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.arc(radius * 0.9, 0, 5, 0, Math.PI * 2);
+                ctx.fillStyle = isScada ? '#0f0' : '#fff';
+                ctx.fill();
+            }
+            
+            ctx.restore();
+            
+            // Draw UI Text
+            ctx.font = '14px Orbitron';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${freq.toFixed(0)} Hz`, cx, h - 20);
+            
+            if(!isScada && pressure > 0) {
+                ctx.fillStyle = 'rgba(255,0,64,0.5)';
+                ctx.fillRect(0, 0, w, (pressure/100) * h); // Red danger overlay
+                
+                ctx.fillStyle = '#ff0040';
+                ctx.font = 'bold 20px Orbitron';
+                ctx.fillText('PRESSURE CRITICAL', cx, 40);
+            }
+        }
+
+        function update() {
+            state.time += 0.016; // 60fps delta
+            
+            // Simulation Logic
+            if(state.mode === 'INJECT') {
+                // Record normal data
+                if(state.recording.length < 300) { // approx 5s sim
+                    state.recording.push({ freq: 1410, pressure: 0 });
+                } else {
+                    log('Enregistrement terminé. Prêt à attaquer.');
+                    state.mode = 'READY';
+                }
+            }
+            
+            if(state.mode === 'ATTACK') {
+                // Cycle attack phases
+                state.attackPhase += 0.02;
+                
+                // 1. Change frequency dramatically
+                if(Math.sin(state.attackPhase) > 0) {
+                    state.freqReal = 1410 + Math.sin(state.attackPhase * 5) * 1400; // Oscillate wildly
+                } else {
+                    state.freqReal = 2; // Or drop to near zero
+                }
+                
+                // 2. Increase pressure
+                state.pressure = Math.min(100, state.pressure + 0.1);
+                
+                // 3. Decrease integrity
+                state.integrity = Math.max(0, state.integrity - 0.02);
+                
+                // 4. Replay recording to SCADA
+                if(state.recording.length > 0) {
+                    const frame = state.recording[Math.floor(state.time * 10) % state.recording.length];
+                    state.freqScada = frame.freq;
+                }
+            }
+            
+            // Update DOM
+            document.getElementById('freqReal').innerText = state.freqReal.toFixed(0) + ' Hz';
+            document.getElementById('pressureReal').innerText = state.pressure > 50 ? 'CRITIQUE' : 'Normal';
+            document.getElementById('pressureReal').className = state.pressure > 50 ? 'stat-value danger' : 'stat-value';
+            
+            const intEl = document.getElementById('integrity');
+            intEl.innerText = state.integrity.toFixed(1) + '%';
+            intEl.className = state.integrity < 50 ? 'stat-value danger' : 'stat-value';
+            
+            // Draw
+            drawScene(rCtx, state.freqReal, state.pressure, false);
+            drawScene(sCtx, state.freqScada, 0, true); // Scada never shows pressure
+            
+            requestAnimationFrame(update);
+        }
+        update();
+
+        // Counter Animation
+        function animateCounter(id, target) {
+            let current = 0;
+            const step = target / 100;
+            const el = document.getElementById(id);
+            const timer = setInterval(() => {
+                current += step;
+                if(current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                el.innerText = Math.floor(current).toLocaleString();
+            }, 20);
+        }
+
+        setTimeout(() => {
+            animateCounter('counterInfected', 984);
+            animateCounter('counterDamage', 100000000);
+        }, 1000);
+
+    </script>
+</body>
+</html>
